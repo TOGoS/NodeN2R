@@ -1,3 +1,65 @@
+import fs from "fs";
+import regeneratorRuntime from "regenerator-runtime-only";
+
+const base32Sha1Regex = /([A-Z2-7]{32})/;
+
+function parseBase32Sha1( urn ) {
+	const m = base32Sha1Regex.exec(urn);
+	if( m ) {
+		return m[1];
+	}
+	return null;
+}
+
+class Repository {
+	constructor( rootDir : string ) {
+		this.rootDir = rootDir;
+	}
+	
+	/**
+	 * Returns a promise to the file containing the specified data.
+	 * The promise fails with an error if no such file is found.
+	 */
+	findFile( urn : string ) {
+		const base32Sha1 = parseBase32Sha1(urn);
+		return new Promise( (resolve, reject) => {
+			if( base32Sha1 === null ) {
+				reject("Malformed URN: "+urn);
+				return;
+			}
+			
+			fs.readdir(this.rootDir+"/data", (err, sectors) => {
+				if( err ) {
+					reject(err);
+					return;
+				}
+				
+				var c = 0;
+				for( var s in sectors ) {
+					const fn = this.rootDir+"/data/"+sectors[s]+"/"+base32Sha1.substring(0,2)+"/"+base32Sha1;
+					fs.exists(fn, function(exists) {
+						if( exists ) {
+							resolve(fn);
+						} else {
+							if( ++c == sectors.length ) reject(base32Sha1 + " not found");
+						}
+					});
+				}
+			});
+		});
+	}
+}
+
+var repo = new Repository("/home/stevens/.ccouch");
+async function go() {
+	try {
+		repo.findFile("asd");
+	} catch( err ) {
+		console.log("Error! "+err);
+	}
+}
+//go().then(() => console.log("pood"));
+
 class N2RAction {
 	constructor( transformName : string, uri : string, filenameHint : ?string ) {
 		this.transformName = transformName;
@@ -11,9 +73,32 @@ function normalizeTransformName( name ) {
 	return name;
 }
 
+function _guessMimeType(buf : Buffer) {
+	/*
+	if( buf.length >= 2 ) {
+		
+	}
+	*/
+};
+
+function guessMimeType(file : string) {
+	// Don't want to deal with this right now.
+	return new Promise( (resolve,reject) => resolve('text/plain') );
+	
+	return new Promise( (resolve, reject) => fs.open(file, "r", (err, fd) => {
+		if( err ) {
+			reject("Error opening "+file+" for reading: "+err);
+			return;
+		}
+		
+		var bytesRead = 0;
+		var buffer = 123; // blah blah blah
+			//fd.on('data', (dat) => 
+	}));
+}
+
 export class Server {
 	constructor( opts : object ) {
-		console.log("Got here.");
 	}
 	
 	parseReq( req ) {
@@ -33,8 +118,15 @@ export class Server {
 		return null;
 	};
 	
-	doAction(act, req, res) {
-		res.send("URI = "+act.uri+", filename = "+act.filenameHint+", transform = "+act.transformName);
+	async doAction(act, req, res) {
+		try {
+			const file = await repo.findFile(act.uri);
+			const type = await guessMimeType(file);
+			res.contentType(type);
+			res.sendFile(file);
+		} catch( error ) {
+			res.status(500).send("Whups.  "+error);
+		}
 	};
 	
 	get expressHandler() {

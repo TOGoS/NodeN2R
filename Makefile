@@ -17,7 +17,7 @@ lib: $(LIB)
 # 'babel -b flow' if we wanted to pass it all through flow as a second step
 lib/%.js: src/%.js node_modules
 	mkdir -p $(@D)
-	node_modules/babel/bin/babel.js $< -o $@
+	node_modules/babel/bin/babel.js --stage=0 $< -o $@
 
 run-server: lib
 	node lib/run-server.js
