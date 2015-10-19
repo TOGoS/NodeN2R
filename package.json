@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "babel": "^5.8.23"
+  },
+  "dependencies": {
+    "express": "^4.13.3"
+  }
+}
