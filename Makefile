@@ -4,8 +4,12 @@ LIB = $(SRC:src/%.js=lib/%.js)
 default: lib
 
 .PHONY: \
+	clean \
 	default \
 	run-server
+
+clean:
+	rm -rf node_modules lib
 
 node_modules: package.json
 	npm install
