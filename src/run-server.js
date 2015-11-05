@@ -1,10 +1,16 @@
 import { Server } from "./n2r-server";
 import express from "express";
 
-var n2rServer = new Server();
-var app = express();
+const n2rServer = new Server();
+const app = express();
+
+app.get('/', (req, res, next) => {
+	res.contentType('text/plain');
+	res.send("Welcome to NodeN2R!");
+});
 
 app.use(n2rServer.expressHandler);
 
-app.listen(4000);
-app.listen(4001);
+const port = 4000;
+console.log("Listening on port "+port);
+app.listen(port);
